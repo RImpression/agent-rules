@@ -146,7 +146,9 @@ your-project/
     │   └── project-context/
     │       └── SKILL.md                ← 项目上下文 Skill（autoActivate）
     └── workflows/
-        └── (空，按需添加)
+        ├── bug-fix.md                  ← Bug 修复工作流
+        ├── feature-development.md      ← 新功能开发工作流
+        └── refactoring.md              ← 代码重构工作流
 ```
 
 ## 设计哲学
@@ -187,6 +189,44 @@ AGENTS.md (入口)
 | Python | pyproject.toml / requirements.txt | 通用编码规范 |
 | Go | go.mod | 通用编码规范 |
 | Monorepo | workspaces / pnpm-workspace.yaml | 框架规范 + 子包结构 |
+
+## 工作流（Workflow）
+
+Workflow 定义 AI 执行多步骤任务时的**行为编排**：按什么顺序、经过哪些检查点、在什么条件下流转到下一步。
+
+### 安装内置工作流
+
+```bash
+arules setup-workflow --list       # 查看可用工作流模板
+arules setup-workflow --all        # 安装所有内置工作流
+arules setup-workflow              # 交互式选择安装
+```
+
+### 内置工作流模板
+
+| 工作流 | 触发词 | 核心流程 |
+|--------|--------|----------|
+| **bug-fix** | "修bug"、"fix bug"、"修复问题" | 复现 → 定位 → 方案 → 修复 → 验证 → 总结 |
+| **feature-development** | "开发功能"、"实现需求" | 分析 → 设计（gate）→ 实现 → 验证 → 收尾 |
+| **refactoring** | "重构"、"refactor"、"优化代码" | 评估 → 补测试 → 计划（gate）→ 分步执行 → 验证 → 总结 |
+
+### 自定义工作流
+
+```bash
+arules add workflow release -d "版本发布工作流"
+```
+
+### 触发方式
+
+- **显式触发**：用户直接说触发词，如"按 bug-fix 流程处理"
+- **AI 建议触发**：AI 根据用户意图匹配 workflow 的 trigger 字段，询问后启动
+
+### 设计要点
+
+- **门控（gate）**：关键步骤需要用户确认或检查通过才能继续
+- **循环保护**：实现↔验证最多 3 次循环，超过则暂停求助
+- **最小改动**：约束 AI 不在修 bug 时顺手重构，不在重构中混入新功能
+- **规范联动**：全程遵循 `code-standards.md`，发现规范缺失时建议更新
 
 ## AI 智能增强（Skill）
 

@@ -21,8 +21,11 @@ export async function addCommand(type: string, name: string, options: AddOptions
     case 'module':
       await addModule(agentsDir, name, options);
       break;
+    case 'workflow':
+      await addWorkflow(agentsDir, name, options);
+      break;
     default:
-      logger.error(`Unknown type: "${type}". Must be one of: rule, skill, module`);
+      logger.error(`Unknown type: "${type}". Must be one of: rule, skill, module, workflow`);
       process.exit(1);
   }
 }
@@ -199,6 +202,114 @@ function appendSkillToRuleIndex(agentsDir: string, name: string, description: st
   }
 
   logger.success(`Updated rule.md index with skill "${name}"`);
+}
+
+async function addWorkflow(agentsDir: string, name: string, options: AddOptions): Promise<void> {
+  const kebabName = toKebabCase(name);
+  const filePath = join(agentsDir, 'workflows', `${kebabName}.md`);
+  const description = options.description || `${name} 工作流`;
+
+  const content = `---
+name: ${kebabName}
+description: ${description}
+trigger:
+  keywords: ["${name}"]
+  autoSuggest: true
+  requireConfirm: true
+---
+
+# ${name} Workflow
+
+## 目标
+
+${description}
+
+## 适用场景
+
+<!-- 描述何时应使用此工作流 -->
+
+## 工作流步骤
+
+### Step 1: 分析
+
+**目标**：理解任务上下文
+
+**执行动作**：
+1. 
+
+**完成标准**：
+
+---
+
+### Step 2: 执行
+
+**目标**：实施具体操作
+
+**执行动作**：
+1. 
+
+**完成标准**：
+
+---
+
+### Step 3: 验证
+
+**目标**：确认结果正确
+
+**门控条件（必须全部通过）**：
+- [ ] 
+
+---
+
+### Step 4: 总结
+
+**目标**：汇报结果
+
+**产出**：
+\`\`\`markdown
+## 执行摘要
+
+**任务**：<描述>
+**结果**：<结果>
+**变更**：<变更说明>
+\`\`\`
+
+## 约束
+
+1. 
+`;
+
+  const result = writeFileWithCheck(filePath, content, {});
+  logger.file(result.action, result.path.replace(process.cwd() + '/', ''));
+
+  if (result.action === 'created') {
+    logger.success(`Workflow "${name}" created at: .agents/workflows/${kebabName}.md`);
+    appendWorkflowToRuleIndex(agentsDir, kebabName, description);
+  }
+}
+
+function appendWorkflowToRuleIndex(agentsDir: string, name: string, description: string): void {
+  const ruleIndexPath = join(agentsDir, 'rules', 'rule.md');
+  if (!existsSync(ruleIndexPath)) return;
+
+  const content = readFileSync(ruleIndexPath, 'utf-8');
+  const entry = `
+### workflow-${name}
+
+- **Path**: workflows/${name}.md
+- **Category**: workflow
+- **Summary**: ${description}
+`;
+
+  const insertionPoint = content.indexOf('## 场景速查');
+  if (insertionPoint !== -1) {
+    const updated = content.slice(0, insertionPoint) + entry + '\n' + content.slice(insertionPoint);
+    writeFileSync(ruleIndexPath, updated, 'utf-8');
+  } else {
+    writeFileSync(ruleIndexPath, content + entry, 'utf-8');
+  }
+
+  logger.success(`Updated rule.md index with workflow "${name}"`);
 }
 
 function toKebabCase(str: string): string {

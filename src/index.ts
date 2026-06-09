@@ -6,6 +6,7 @@ import { addCommand } from './commands/add.js';
 import { refreshCommand } from './commands/refresh.js';
 import { doctorCommand } from './commands/doctor.js';
 import { setupSkillCommand } from './commands/setup-skill.js';
+import { setupWorkflowCommand } from './commands/setup-workflow.js';
 import { syncCommand } from './commands/sync.js';
 
 const program = new Command();
@@ -27,8 +28,8 @@ program
 
 program
   .command('add')
-  .description('Add a new rule, skill, or module-map')
-  .argument('<type>', 'Type to add: rule | skill | module')
+  .description('Add a new rule, skill, module-map, or workflow')
+  .argument('<type>', 'Type to add: rule | skill | module | workflow')
   .argument('<name>', 'Name of the item to add')
   .option('-d, --description <desc>', 'Brief description')
   .action(addCommand);
@@ -59,5 +60,13 @@ program
   .option('-g, --global', 'Install to global skill directory (~/.agents/skills/)')
   .option('-l, --local', 'Install to current project .agents/skills/ (default)')
   .action(setupSkillCommand);
+
+program
+  .command('setup-workflow')
+  .description('Install built-in workflow templates (bug-fix, feature-development, refactoring)')
+  .option('-l, --list', 'List available workflow templates')
+  .option('-a, --all', 'Install all workflow templates')
+  .option('-f, --force', 'Force overwrite existing workflow files')
+  .action(setupWorkflowCommand);
 
 program.parse();
