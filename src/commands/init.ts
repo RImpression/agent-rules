@@ -14,6 +14,8 @@ import { generateCodeStandardsMd } from '../templates/base/code-standards-md.js'
 import { generateAgentCapabilitiesMd } from '../templates/base/agent-capabilities-md.js';
 import { writeFileWithCheck } from '../utils/fs.js';
 import { logger } from '../utils/logger.js';
+import { parsePlatformList } from '../platforms/index.js';
+import type { PlatformConfig } from '../platforms/index.js';
 import type { WriteFileResult } from '../utils/fs.js';
 
 interface InitOptions {
@@ -21,6 +23,7 @@ interface InitOptions {
   merge?: boolean;
   template?: string;
   dryRun?: boolean;
+  platform?: string;
 }
 
 export async function initCommand(options: InitOptions): Promise<void> {
@@ -119,6 +122,23 @@ export async function initCommand(options: InitOptions): Promise<void> {
       content: generateProjectContextSkillMd(),
     },
   ];
+
+  // Step 5: Add platform config files if --platform is specified
+  if (options.platform) {
+    try {
+      const platforms = parsePlatformList(options.platform);
+      for (const platform of platforms) {
+        filesToGenerate.push({
+          path: join(rootDir, platform.filePath),
+          content: platform.generateContent(projectName),
+        });
+      }
+      logger.info(`Platform configs: ${platforms.map((p: PlatformConfig) => p.displayName).join(', ')}`);
+    } catch (error) {
+      logger.error((error as Error).message);
+      process.exit(1);
+    }
+  }
 
   logger.heading('Writing files');
 
